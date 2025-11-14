@@ -39,17 +39,16 @@ namespace ExamManager.Pages
 
         public void OnGet()
         {
-            if (TempData["ExtractedText"] != null)
-                ExtractedText = TempData["ExtractedText"]?.ToString() ?? string.Empty;
+            ExtractedText = TempData["ExtractedText"]?.ToString() ?? string.Empty;
+            FormUrl = TempData["FormUrl"]?.ToString() ?? string.Empty;
+            ErrorMessage = TempData["ErrorMessage"]?.ToString() ?? string.Empty;
+            QuestionCount = TempData["QuestionCount"] != null ? (int)TempData["QuestionCount"] : 0;
+            IsProcessing = TempData["IsProcessing"] != null ? (bool)TempData["IsProcessing"] : false;
 
-            if (TempData["FormUrl"] != null)
-                FormUrl = TempData["FormUrl"]?.ToString() ?? string.Empty;
+            // ✅ Keep TempData để có thể đọc lại nếu cần
+            TempData.Keep();
 
-            if (TempData["ErrorMessage"] != null)
-                ErrorMessage = TempData["ErrorMessage"]?.ToString() ?? string.Empty;
-
-            if (TempData["QuestionCount"] != null)
-                QuestionCount = (int)(TempData["QuestionCount"] ?? 0);
+            _logger.LogInformation($"OnGet - FormUrl: {FormUrl}, ErrorMessage: {ErrorMessage}, QuestionCount: {QuestionCount}");
         }
 
         public async Task<IActionResult> OnPostUploadAsync(string formTitle, List<IFormFile> files)

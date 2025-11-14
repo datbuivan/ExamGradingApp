@@ -84,3 +84,4 @@ D:\ExamGradingApp\obj\Debug\net8.0\refint\ExamGradingApp.dll
 D:\ExamGradingApp\obj\Debug\net8.0\ExamGradingApp.pdb
 D:\ExamGradingApp\obj\Debug\net8.0\ExamGradingApp.genruntimeconfig.cache
 D:\ExamGradingApp\obj\Debug\net8.0\ref\ExamGradingApp.dll
+D:\ExamGradingApp\obj\Debug\net8.0\ExamGradingApp.sourcelink.json
