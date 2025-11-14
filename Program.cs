@@ -4,6 +4,13 @@ using ExamManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to listen on port from environment variable (Render uses PORT)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(int.Parse(port));
+});
+
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
 
@@ -26,6 +33,10 @@ builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Logout";
     options.ExpireTimeSpan = TimeSpan.FromHours(2);
     options.SlidingExpiration = true;
+
+    // Configure cookie for production
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 })
 .AddGoogle(options =>
 {
@@ -34,7 +45,7 @@ builder.Services.AddAuthentication(options =>
     options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
         ?? throw new InvalidOperationException("Google ClientSecret not configured");
 
-    // ✅ FIX: Thêm scope có quyền tạo và chỉnh sửa form
+    // Thêm scope có quyền tạo và chỉnh sửa form
     options.Scope.Add("https://www.googleapis.com/auth/forms.body");
     options.Scope.Add("https://www.googleapis.com/auth/drive.file");
 
@@ -44,7 +55,8 @@ builder.Services.AddAuthentication(options =>
     // Xử lý lỗi
     options.Events.OnRemoteFailure = context =>
     {
-        context.Response.Redirect("/Login?error=" + context.Failure?.Message);
+        var errorMessage = context.Failure?.Message ?? "Unknown error";
+        context.Response.Redirect("/Login?error=" + Uri.EscapeDataString(errorMessage));
         context.HandleResponse();
         return Task.CompletedTask;
     };
@@ -55,12 +67,14 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(2);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 // Add antiforgery
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 var app = builder.Build();
@@ -76,7 +90,24 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// Configure forwarded headers for reverse proxy (Render)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
+// HTTPS handling: Skip redirect in production (Render handles SSL termination)
+if (app.Environment.IsDevelopment())
+{
+    app.Logger.LogInformation("Environment is Development — enabling HTTPS redirection.");
+    app.UseHttpsRedirection();
+}
+else
+{
+    app.Logger.LogInformation("Production environment — skipping HTTPS redirection (handled by Render).");
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -85,5 +116,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+
+// Log startup information
+app.Logger.LogInformation("Application starting on port {Port}", port);
+app.Logger.LogInformation("Environment: {Environment}", app.Environment.EnvironmentName);
 
 app.Run();
