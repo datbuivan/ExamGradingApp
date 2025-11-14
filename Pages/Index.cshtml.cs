@@ -39,16 +39,17 @@ namespace ExamManager.Pages
 
         public void OnGet()
         {
-            ExtractedText = TempData["ExtractedText"]?.ToString() ?? string.Empty;
-            FormUrl = TempData["FormUrl"]?.ToString() ?? string.Empty;
-            ErrorMessage = TempData["ErrorMessage"]?.ToString() ?? string.Empty;
-            QuestionCount = TempData["QuestionCount"] != null ? (int)TempData["QuestionCount"] : 0;
-            IsProcessing = TempData["IsProcessing"] != null ? (bool)TempData["IsProcessing"] : false;
+            if (TempData["ExtractedText"] != null)
+                ExtractedText = TempData["ExtractedText"]?.ToString() ?? string.Empty;
 
-            // ✅ Keep TempData để có thể đọc lại nếu cần
-            TempData.Keep();
+            if (TempData["FormUrl"] != null)
+                FormUrl = TempData["FormUrl"]?.ToString() ?? string.Empty;
 
-            _logger.LogInformation($"OnGet - FormUrl: {FormUrl}, ErrorMessage: {ErrorMessage}, QuestionCount: {QuestionCount}");
+            if (TempData["ErrorMessage"] != null)
+                ErrorMessage = TempData["ErrorMessage"]?.ToString() ?? string.Empty;
+
+            if (TempData["QuestionCount"] != null)
+                QuestionCount = (int)(TempData["QuestionCount"] ?? 0);
         }
 
         public async Task<IActionResult> OnPostUploadAsync(string formTitle, List<IFormFile> files)
@@ -60,13 +61,13 @@ namespace ExamManager.Pages
                 if (string.IsNullOrWhiteSpace(formTitle))
                 {
                     TempData["ErrorMessage"] = "Vui lòng nhập tiêu đề đề thi";
-                    return RedirectToPage();
+                    return Page();
                 }
 
                 if (files == null || !files.Any())
                 {
                     TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một file";
-                    return RedirectToPage();
+                    return Page();
                 }
 
                 var allText = string.Empty;
@@ -99,7 +100,7 @@ namespace ExamManager.Pages
                         {
                             _logger.LogError(ex, $"Lỗi khi xử lý file {file.FileName}");
                             TempData["ErrorMessage"] = $"Lỗi khi xử lý file {file.FileName}: {ex.Message}";
-                            return RedirectToPage();
+                            return Page();
                         }
                     }
                 }
@@ -107,7 +108,7 @@ namespace ExamManager.Pages
                 if (string.IsNullOrWhiteSpace(allText))
                 {
                     TempData["ErrorMessage"] = "Không thể trích xuất text từ các file.";
-                    return RedirectToPage();
+                    return Page();
                 }
 
                 TempData["ExtractedText"] = allText.Trim();
@@ -123,7 +124,7 @@ namespace ExamManager.Pages
                     TempData["ErrorMessage"] = "Không parse được câu hỏi. Vui lòng kiểm tra:\n" +
                         "✓ Câu hỏi có số thứ tự: 1. 2. 3.\n" +
                         "✓ Đáp án có chữ cái: A. B. C. D.";
-                    return RedirectToPage();
+                    return Page();
                 }
 
                 var questionsWithAnswers = questions.Count(q => q.CorrectAnswerIndices.Any());
@@ -143,7 +144,7 @@ namespace ExamManager.Pages
                 if (string.IsNullOrEmpty(accessToken))
                 {
                     TempData["ErrorMessage"] = "Token hết hạn. Vui lòng đăng xuất và đăng nhập lại.";
-                    return RedirectToPage();
+                    return Page();
                 }
 
                 try
@@ -165,7 +166,7 @@ namespace ExamManager.Pages
                 TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
             }
 
-            return RedirectToPage();
+            return Page();
         }
 
         private (List<ExamQuestion> questions, Dictionary<int, string> answerKey) ParseQuestionsWithAnswers(string text)

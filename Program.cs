@@ -70,6 +70,9 @@ builder.Services.AddSession(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
+builder.Services.AddRazorPages()
+    .AddSessionStateTempDataProvider();
+
 // Add antiforgery
 builder.Services.AddAntiforgery(options =>
 {
@@ -79,7 +82,6 @@ builder.Services.AddAntiforgery(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
