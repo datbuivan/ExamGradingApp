@@ -16,7 +16,7 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Copy tessdata nếu cần cho OCR
-COPY tessdata ./tessdata
+# Bỏ qua tessdata nếu không cần OCR
+# Hoặc tải tessdata trong runtime nếu cần
 
 ENTRYPOINT ["dotnet", "ExamGradingApp.dll"]
